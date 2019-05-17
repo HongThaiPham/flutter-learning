@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert' as convert;
 
 class People {
   String name;
@@ -6,6 +8,9 @@ class People {
   String email;
 
   People(this.name, this.gender, this.email);
+
+  factory People.fromJson(Map<String, dynamic> json) =>
+      new People(json["name"]["title"], json['gender'], json['email']);
 }
 
 List<People> _peoples = [
@@ -19,9 +24,15 @@ class ListPage extends StatefulWidget {
 }
 
 class _ListPageState extends State<ListPage> {
+  List<People> _dataPeople;
   @override
   void initState() {
     super.initState();
+    _getData().then((data) {
+      setState(() {
+        _dataPeople = data;
+      });
+    });
   }
 
   Widget _buildTile(data) {
@@ -54,19 +65,37 @@ class _ListPageState extends State<ListPage> {
     return new ListView.builder(
       padding: new EdgeInsets.all(5.0),
       itemBuilder: (context, index) {
-        return _buildTile(_peoples[index]);
+        return _buildTile(_dataPeople[index]);
       },
-      itemCount: _peoples.length,
+      itemCount: _dataPeople.length,
     );
+  }
+
+  Future<List<People>> _getData() async {
+    List<People> peo = new List<People>();
+    final response = await http.get("https://randomuser.me/api/?results=20");
+    if (response.statusCode == 200) {
+      final jsonResponse = convert.jsonDecode(response.body);
+      List results = jsonResponse['results'];
+      List temp = new List.from(results);
+      peo.addAll(temp.map((f) {
+        return new People.fromJson(f);
+      }));
+    } else {
+      print("Request failed with status: ${response.statusCode}.");
+    }
+    return peo;
+    // print(respone.toString());
   }
 
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
-      appBar: new AppBar(
-        title: new Text('List'),
-      ),
-      body: new Container(child: _useListBuilder()),
-    );
+        appBar: new AppBar(
+          title: new Text('List'),
+        ),
+        body: new Container(
+          child: _useListBuilder(),
+        ));
   }
 }

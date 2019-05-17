@@ -4,7 +4,6 @@ import 'list_page.dart';
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  String str = "text in my app";
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -72,9 +71,7 @@ class _MyHomePageState extends State<MyHomePage> {
     print(renderBtn.localToGlobal(Offset.zero));
     print(renderBtn.size);
 
-    MyApp myApp = btnKey.currentContext.ancestorWidgetOfExactType(MyApp);
-
-    print(myApp.str);
+    // MyApp myApp = btnKey.currentContext.ancestorWidgetOfExactType(MyApp);
   }
 
   @override
