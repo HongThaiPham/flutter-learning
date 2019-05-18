@@ -24,7 +24,9 @@ class ListPage extends StatefulWidget {
 }
 
 class _ListPageState extends State<ListPage> {
-  List<People> _dataPeople;
+  ScrollController _scrollController = new ScrollController();
+  List<People> _dataPeople = new List<People>();
+  bool isPerformingRequest = false;
   @override
   void initState() {
     super.initState();
@@ -32,6 +34,32 @@ class _ListPageState extends State<ListPage> {
       setState(() {
         _dataPeople = data;
       });
+    });
+    _scrollController.addListener(() {
+
+      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+
+        if (!isPerformingRequest) {
+          setState(() => isPerformingRequest = true);
+          _getData().then((data) {
+            data=[];
+            if(data.isEmpty){
+              double edge = 50.0;
+              double offsetFromBottom = _scrollController.position.maxScrollExtent - _scrollController.position.pixels;
+              if (offsetFromBottom < edge) {
+                _scrollController.animateTo(
+                    _scrollController.offset - (edge -offsetFromBottom),
+                    duration: new Duration(milliseconds: 500),
+                    curve: Curves.easeOut);
+              }
+            }
+            setState(() {
+              _dataPeople.addAll(data);
+              isPerformingRequest = false;
+            });
+          });
+        }
+      }
     });
   }
 
@@ -43,6 +71,18 @@ class _ListPageState extends State<ListPage> {
         style: new TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
       ),
       subtitle: new Text(data.email),
+    );
+  }
+
+  Widget _buildProgressIndicator() {
+    return new Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: new Center(
+        child: new Opacity(
+          opacity: isPerformingRequest ? 1.0 : 0.0,
+          child: new CircularProgressIndicator(),
+        ),
+      ),
     );
   }
 
@@ -58,6 +98,7 @@ class _ListPageState extends State<ListPage> {
     return new ListView(
       padding: new EdgeInsets.all(8.0),
       children: _buildList(),
+      controller: _scrollController,
     );
   }
 
@@ -65,9 +106,14 @@ class _ListPageState extends State<ListPage> {
     return new ListView.builder(
       padding: new EdgeInsets.all(5.0),
       itemBuilder: (context, index) {
-        return _buildTile(_dataPeople[index]);
+        if (index == _dataPeople.length) {
+          return _buildProgressIndicator();
+        } else {
+          return _buildTile(_dataPeople[index]);
+        }
       },
-      itemCount: _dataPeople.length,
+      itemCount: _dataPeople.length+1,
+      controller: _scrollController,
     );
   }
 
@@ -85,7 +131,7 @@ class _ListPageState extends State<ListPage> {
       print("Request failed with status: ${response.statusCode}.");
     }
     return peo;
-    // print(respone.toString());
+
   }
 
   @override
@@ -97,5 +143,11 @@ class _ListPageState extends State<ListPage> {
         body: new Container(
           child: _useListBuilder(),
         ));
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }
